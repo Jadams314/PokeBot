@@ -1,5 +1,0 @@
-Copy your Pokemon Blue ROM file (it ends in .gb) into this folder,
-then run:  python play.py
-
-You must legally own the game and provide your own ROM file.
-ROMs are never committed to git (see .gitignore).

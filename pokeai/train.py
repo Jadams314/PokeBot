@@ -87,6 +87,9 @@ def train(rom_path, num_envs=C.NUM_ENVS, show_window=False):
     finally:
         final_path = os.path.join(C.CHECKPOINT_DIR, "pokemon_blue_latest")
         model.save(final_path)
-        vec_env.close()
+        try:
+            vec_env.close()
+        except (EOFError, BrokenPipeError, OSError):
+            pass
         print(f"Progress saved to {os.path.relpath(final_path)}.zip")
         print("Run  python play.py  again any time to continue training.")

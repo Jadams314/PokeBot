@@ -5,6 +5,7 @@ on (or after) to see what the model has learned so far.
 """
 
 import os
+import signal
 import time
 
 from stable_baselines3 import PPO
@@ -33,10 +34,18 @@ def watch(rom_path, speed=1):
     )
     model = PPO.load(checkpoint)
 
+    _stop = False
+
+    def _handle_sigint(sig, frame):
+        nonlocal _stop
+        _stop = True
+
+    signal.signal(signal.SIGINT, _handle_sigint)
+
     try:
         obs, _ = env.reset()
         last_report = time.time()
-        while True:
+        while not _stop:
             action, _ = model.predict(obs, deterministic=False)
             obs, _, terminated, truncated, info = env.step(int(action))
 
@@ -52,7 +61,6 @@ def watch(rom_path, speed=1):
                 print(f"In-game time: {info['in_game_time']}")
             if terminated or truncated:
                 obs, _ = env.reset()
-    except KeyboardInterrupt:
-        print("\nStopped watching. Training checkpoints are unaffected.")
     finally:
         env.close()
+        print("\nStopped watching. Training checkpoints are unaffected.")

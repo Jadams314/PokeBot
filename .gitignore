@@ -1,0 +1,16 @@
+# Never commit game ROMs
+roms/*
+!roms/PUT_YOUR_ROM_HERE.txt
+
+# Training output (the AI's "brain" and logs stay local)
+checkpoints/
+tensorboard/
+init.state
+progress.json
+completions.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

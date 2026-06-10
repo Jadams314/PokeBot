@@ -28,23 +28,46 @@ intro automatically, and starts training. Progress is saved constantly —
 stop any time with `Ctrl+C` and it picks up where it left off the next
 time you run `python play.py`.
 
-## Watching the AI play (live)
+## Commands reference
 
-Any time — even while training is running in another terminal — open a
-real game window and watch the newest version of the AI play at normal
-Game Boy speed:
+### Starting the program
 
-```
-python play.py watch
-```
+| Command | What it does |
+|---|---|
+| `python play.py` | Start (or resume) training |
+| `python play.py watch` | Watch the AI play live in a game window |
+| `python play.py setup` | Play the intro yourself once for a better starting point |
+| `python play.py --show` | Train with a live window showing one game (faster than real time) |
+| `python play.py --envs 4` | Train with 4 parallel games instead of the default 8 (use on weaker PCs) |
+| `python play.py --envs 16` | Train with 16 parallel games for faster learning (needs more CPU/RAM) |
+| `python play.py --envs 4 --show` | Fewer envs + visible window — useful for watching on lower-end hardware |
 
-Early on it will look like random button mashing. That's genuinely how it
-learns: it tries everything, and the behaviors that earn reward (new
-places, levels, badges) get reinforced. Re-run `watch` after a few hours
-or days of training and you'll see real progress.
+### While training is running
 
-You can also add a window to the training itself with
-`python play.py --show` (this one runs much faster than real time).
+| Action | How |
+|---|---|
+| Stop safely (progress saved) | Press `Ctrl+C` in the training terminal |
+| Watch the AI play in a second window | Open a new terminal and run `python play.py watch` |
+| View live graphs | Run `tensorboard --logdir tensorboard` and open the printed URL in a browser |
+| Check latest stats without opening anything | Open `progress.json` |
+
+### While in watch mode
+
+| Action | How |
+|---|---|
+| Stop the watch window | Press `Ctrl+C` in the watch terminal (training is unaffected) |
+| Reload the newest checkpoint | Stop and re-run `python play.py watch` |
+
+### Setup window controls
+
+When running `python play.py setup`, the keyboard layout is:
+
+| Key | Button |
+|---|---|
+| Arrow keys | D-pad |
+| `Z` | A |
+| `X` | B |
+| `Enter` | Start |
 
 ## Checking progress
 
@@ -91,8 +114,6 @@ fun is watching it improve. Leave it running, peek in with
 `python play.py watch`, and check `progress.json`.
 
 Tips:
-- More parallel games = faster learning: `python play.py --envs 16`
-  (needs a beefier CPU/RAM; default is 8, use `--envs 4` on weak machines).
 - Keep the same `checkpoints/` folder — that's the AI's brain. Delete it
   only if you want to start from scratch.
 

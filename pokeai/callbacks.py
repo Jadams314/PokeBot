@@ -24,6 +24,14 @@ def _fmt_duration(seconds):
     return f"{h:02d}h {m:02d}m {s:02d}s"
 
 
+def _fmt_count(n):
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}K"
+    return str(int(n))
+
+
 class ProgressCallback(BaseCallback):
     """Prints a human-friendly status line and records completions."""
 
@@ -32,13 +40,35 @@ class ProgressCallback(BaseCallback):
         self.report_every_steps = report_every_steps
         self.start_time = time.time()
         self.best = {"badges": 0, "level_sum": 0, "maps_visited": 0,
-                     "events": 0, "dex_owned": 0}
+                     "buildings_visited": 0, "events": 0, "dex_owned": 0,
+                     "episode_reward": 0.0}
         self.completions = 0
+        self.total_episodes = 0
         self._next_report = report_every_steps
 
     def _on_training_start(self):
+        if os.path.exists(C.PROGRESS_FILE):
+            try:
+                with open(C.PROGRESS_FILE) as f:
+                    snapshot = json.load(f)
+                for key in self.best:
+                    if key in snapshot:
+                        self.best[key] = snapshot[key]
+                self.total_episodes = int(snapshot.get("total_games", 0))
+                self.completions = int(snapshot.get("completions", 0))
+            except (OSError, json.JSONDecodeError):
+                pass
+
+        # Align the first report to the next clean interval above current step
+        current = self.model.num_timesteps
+        self._next_report = (
+            current + self.report_every_steps
+            - (current % self.report_every_steps or self.report_every_steps)
+        )
+
         print()
         print("Training started. The model is now playing Pokemon Blue.")
+        print(f"  - Neural network device:    {C.DEVICE.upper()}")
         print("  - Watch it live any time:   python play.py watch")
         print("  - Detailed graphs:          tensorboard --logdir "
               f"{os.path.relpath(C.TENSORBOARD_DIR)}")
@@ -47,6 +77,8 @@ class ProgressCallback(BaseCallback):
         print()
 
     def _on_step(self):
+        self.total_episodes += int(sum(self.locals.get("dones", [])))
+
         for info in self.locals.get("infos", []):
             improved = False
             for key in self.best:
@@ -70,9 +102,12 @@ class ProgressCallback(BaseCallback):
     def _report(self):
         elapsed = _fmt_duration(time.time() - self.start_time)
         b = self.best
-        line = (f"[{elapsed} | {self.num_timesteps:,} steps] best so far: "
+        line = (f"[{elapsed} | {_fmt_count(self.num_timesteps)} steps | "
+                f"{_fmt_count(self.total_episodes)} games] best so far: "
                 f"{b['badges']}/8 badges, party levels {b['level_sum']}, "
-                f"{b['maps_visited']} areas, {b['dex_owned']} pokemon caught")
+                f"{b['maps_visited']} areas, {b['buildings_visited']} buildings, "
+                f"{b['dex_owned']} pokemon caught, "
+                f"{b['episode_reward']:.0f} pts best episode")
         if self.completions:
             line += f", GAME COMPLETED x{self.completions}!"
         print(line)
@@ -80,6 +115,7 @@ class ProgressCallback(BaseCallback):
         snapshot = dict(b)
         snapshot.update({
             "total_steps": self.num_timesteps,
+            "total_games": self.total_episodes,
             "training_time": elapsed,
             "completions": self.completions,
             "updated": datetime.now().isoformat(timespec="seconds"),

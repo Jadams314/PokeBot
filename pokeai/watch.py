@@ -32,7 +32,7 @@ def watch(rom_path, speed=1):
         headless=False,
         emulation_speed=speed,
     )
-    model = PPO.load(checkpoint)
+    model = PPO.load(checkpoint, device=C.DEVICE)
 
     _stop = False
 
@@ -45,21 +45,25 @@ def watch(rom_path, speed=1):
     try:
         obs, _ = env.reset()
         last_report = time.time()
+        games = 1
         while not _stop:
             action, _ = model.predict(obs, deterministic=False)
             obs, _, terminated, truncated, info = env.step(int(action))
 
             if time.time() - last_report > 30:
                 last_report = time.time()
-                print(f"  badges {info['badges']}/8 | party levels "
-                      f"{info['level_sum']} | areas seen "
-                      f"{info['maps_visited']} | in-game time "
-                      f"{env.in_game_time()}")
+                print(f"  game {games} | badges {info['badges']}/8 | "
+                      f"party levels {info['level_sum']} | "
+                      f"areas {info['maps_visited']} | "
+                      f"buildings {info['buildings_visited']} | "
+                      f"points {info['episode_reward']:.0f} | "
+                      f"in-game time {env.in_game_time()}")
 
             if info.get("completed"):
                 print("\nThe model just BEAT THE GAME while you watched!")
                 print(f"In-game time: {info['in_game_time']}")
             if terminated or truncated:
+                games += 1
                 obs, _ = env.reset()
     finally:
         env.close()

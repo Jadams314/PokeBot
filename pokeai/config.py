@@ -1,6 +1,7 @@
 """Central configuration: paths and training hyperparameters."""
 
 import os
+import torch
 
 # Project layout (everything lives next to play.py)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,6 +26,7 @@ EPISODE_MAX_STEPS = 16384     # actions per episode before the game restarts
 # --- Rewards (what the model gets "points" for) ---
 REWARD_NEW_TILE = 0.01        # stepping somewhere it has never been this episode
 REWARD_NEW_MAP = 1.0          # entering a brand new map/area
+REWARD_NEW_BUILDING = 3.0     # entering a building for the first time this episode
 REWARD_LEVEL = 0.5            # per pokemon level gained
 REWARD_BADGE = 20.0           # per gym badge
 REWARD_EVENT = 2.0            # per story event flag set
@@ -32,6 +34,13 @@ REWARD_DEX_SEEN = 0.2         # per new pokemon seen
 REWARD_DEX_OWNED = 3.0        # per new pokemon caught
 REWARD_COMPLETION = 500.0     # entering the Hall of Fame (game beaten!)
 LEVEL_REWARD_CAP = 120        # stop rewarding levels past this party total
+
+# Tileset IDs that represent indoor buildings (from the pokered disassembly).
+# Excludes: 0=Overworld, 3=Forest, 14=Cemetery, 16=Cavern, 22=Plateau.
+BUILDING_TILESETS = frozenset({1, 2, 4, 5, 6, 7, 8, 9, 11, 12, 13, 15, 17, 18, 19, 20, 21})
+
+# --- Device ---
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # --- PPO training ---
 NUM_ENVS = 8                  # parallel copies of the game (lower if low on RAM)

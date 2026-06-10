@@ -37,6 +37,7 @@ POKEDEX_BYTES = 19
 
 # --- Location ---
 MAP_ID = 0xD35E
+MAP_TILESET = 0xD367              # tileset index of the current map
 PLAYER_Y = 0xD361
 PLAYER_X = 0xD362
 

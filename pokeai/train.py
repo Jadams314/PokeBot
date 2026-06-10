@@ -51,7 +51,8 @@ def train(rom_path, num_envs=C.NUM_ENVS, show_window=False):
     if resume_from:
         print(f"Resuming training from {os.path.relpath(resume_from)}")
         model = PPO.load(resume_from, env=vec_env,
-                         tensorboard_log=C.TENSORBOARD_DIR)
+                         tensorboard_log=C.TENSORBOARD_DIR,
+                         device=C.DEVICE)
     else:
         print("Starting a brand new model (it knows nothing yet — early "
               "play will look completely random; that's normal).")
@@ -64,6 +65,7 @@ def train(rom_path, num_envs=C.NUM_ENVS, show_window=False):
             ent_coef=C.PPO_ENT_COEF,
             learning_rate=C.PPO_LEARNING_RATE,
             tensorboard_log=C.TENSORBOARD_DIR,
+            device=C.DEVICE,
             verbose=0,
         )
 

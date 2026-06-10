@@ -119,6 +119,7 @@ class PokemonBlueEnv(gym.Env):
         self.step_count = 0
         self.visited_tiles = set()
         self.visited_maps = set()
+        self.visited_buildings = set()
         self.prev_level_sum = 0
         self.prev_badges = 0
         self.prev_events = 0
@@ -179,6 +180,7 @@ class PokemonBlueEnv(gym.Env):
             "level_sum": self.prev_level_sum,
             "events": self.prev_events,
             "maps_visited": len(self.visited_maps),
+            "buildings_visited": len(self.visited_buildings),
             "tiles_visited": len(self.visited_tiles),
             "dex_owned": self.prev_owned,
             "episode_reward": self.total_reward,
@@ -225,12 +227,17 @@ class PokemonBlueEnv(gym.Env):
         reward = 0.0
 
         pos = self.position()
+        map_id = pos[0]
         if pos not in self.visited_tiles:
             self.visited_tiles.add(pos)
             reward += C.REWARD_NEW_TILE
-        if pos[0] not in self.visited_maps:
-            self.visited_maps.add(pos[0])
+        if map_id not in self.visited_maps:
+            self.visited_maps.add(map_id)
             reward += C.REWARD_NEW_MAP
+        if (map_id not in self.visited_buildings
+                and self.read(M.MAP_TILESET) in C.BUILDING_TILESETS):
+            self.visited_buildings.add(map_id)
+            reward += C.REWARD_NEW_BUILDING
 
         level_sum = sum(self.party_levels())
         if level_sum > self.prev_level_sum and self.prev_level_sum < C.LEVEL_REWARD_CAP:

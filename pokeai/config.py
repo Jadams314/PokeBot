@@ -21,15 +21,21 @@ ACTION_WAIT_FRAMES = 16       # frames to let the game react afterwards
 FRAME_STACK = 3               # how many past screens the model sees at once
 SCREEN_SHAPE = (72, 80)       # downscaled from the Game Boy's 144x160
 
-EPISODE_MAX_STEPS = 16384     # actions per episode before the game restarts
+# Text observation — bottom portion of the background tilemap.
+# Rows 12-17 cover the text box (14-17) plus two rows of battle/menu context.
+TEXT_ROW_START = 12
+TEXT_ROWS = 6
+TEXT_COLS = 20
+
+NO_PROGRESS_STEPS = 5000      # episode ends if no new tile visited within this many steps
 
 # --- Rewards (what the model gets "points" for) ---
 REWARD_NEW_TILE = 0.01        # stepping somewhere it has never been this episode
-REWARD_NEW_MAP = 1.0          # entering a brand new map/area
-REWARD_NEW_BUILDING = 3.0     # entering a building for the first time this episode
-REWARD_LEVEL = 0.5            # per pokemon level gained
+REWARD_NEW_MAP = 3.0          # entering a brand new map/area
+REWARD_NEW_BUILDING = 5.0     # entering a building for the first time this episode
+REWARD_LEVEL = 1.0            # per pokemon level gained
 REWARD_BADGE = 20.0           # per gym badge
-REWARD_EVENT = 2.0            # per story event flag set
+REWARD_EVENT = 8.0            # per story event flag set
 REWARD_DEX_SEEN = 0.2         # per new pokemon seen
 REWARD_DEX_OWNED = 3.0        # per new pokemon caught
 REWARD_COMPLETION = 500.0     # entering the Hall of Fame (game beaten!)

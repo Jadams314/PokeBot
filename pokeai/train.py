@@ -49,11 +49,19 @@ def train(rom_path, num_envs=C.NUM_ENVS, show_window=False):
 
     resume_from = latest_checkpoint()
     if resume_from:
-        print(f"Resuming training from {os.path.relpath(resume_from)}")
-        model = PPO.load(resume_from, env=vec_env,
-                         tensorboard_log=C.TENSORBOARD_DIR,
-                         device=C.DEVICE)
-    else:
+        try:
+            model = PPO.load(resume_from, env=vec_env,
+                             tensorboard_log=C.TENSORBOARD_DIR,
+                             device=C.DEVICE)
+            print(f"Resuming training from {os.path.relpath(resume_from)}")
+        except (AssertionError, ValueError):
+            print("Existing checkpoint is incompatible with the current "
+                  "observation space (it was trained without text input).")
+            print("Starting fresh — the old checkpoint is preserved in "
+                  f"{os.path.relpath(resume_from)} but will not be loaded.")
+            resume_from = None
+
+    if not resume_from:
         print("Starting a brand new model (it knows nothing yet — early "
               "play will look completely random; that's normal).")
         model = PPO(
@@ -84,14 +92,14 @@ def train(rom_path, num_envs=C.NUM_ENVS, show_window=False):
             callback=callbacks,
             reset_num_timesteps=resume_from is None,
         )
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError, BrokenPipeError):
         print("\nStopping... saving progress first.")
     finally:
         final_path = os.path.join(C.CHECKPOINT_DIR, "pokemon_blue_latest")
         model.save(final_path)
         try:
             vec_env.close()
-        except (EOFError, BrokenPipeError, OSError):
+        except (EOFError, BrokenPipeError, OSError, KeyboardInterrupt):
             pass
         print(f"Progress saved to {os.path.relpath(final_path)}.zip")
         print("Run  python play.py  again any time to continue training.")

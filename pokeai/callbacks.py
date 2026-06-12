@@ -40,8 +40,8 @@ class ProgressCallback(BaseCallback):
         self.report_every_steps = report_every_steps
         self.start_time = time.time()
         self.best = {"badges": 0, "level_sum": 0, "maps_visited": 0,
-                     "buildings_visited": 0, "events": 0, "dex_owned": 0,
-                     "episode_reward": 0.0}
+                     "buildings_visited": 0, "events": 0,
+                     "dex_seen": 0, "dex_owned": 0, "episode_reward": 0.0}
         self.completions = 0
         self.total_episodes = 0
         self._next_report = report_every_steps
@@ -106,7 +106,7 @@ class ProgressCallback(BaseCallback):
                 f"{_fmt_count(self.total_episodes)} games] best so far: "
                 f"{b['badges']}/8 badges, party levels {b['level_sum']}, "
                 f"{b['maps_visited']} areas, {b['buildings_visited']} buildings, "
-                f"{b['dex_owned']} pokemon caught, "
+                f"{b['dex_seen']} seen / {b['dex_owned']} caught, "
                 f"{b['episode_reward']:.0f} pts best episode")
         if self.completions:
             line += f", GAME COMPLETED x{self.completions}!"

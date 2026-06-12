@@ -12,6 +12,7 @@ from stable_baselines3 import PPO
 
 from . import config as C
 from .env import PokemonBlueEnv
+from .text_map import readable_text
 from .train import latest_checkpoint
 
 
@@ -56,8 +57,12 @@ def watch(rom_path, speed=1):
                       f"party levels {info['level_sum']} | "
                       f"areas {info['maps_visited']} | "
                       f"buildings {info['buildings_visited']} | "
+                      f"seen {info['dex_seen']} / caught {info['dex_owned']} | "
                       f"points {info['episode_reward']:.0f} | "
                       f"in-game time {env.in_game_time()}")
+                screen_text = readable_text(env._read_text_tiles())
+                if screen_text:
+                    print(f"  screen: {screen_text[:100]}")
 
             if info.get("completed"):
                 print("\nThe model just BEAT THE GAME while you watched!")

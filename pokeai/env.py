@@ -26,12 +26,10 @@ class PokemonBlueEnv(gym.Env):
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, rom_path, init_state=None, headless=True,
-                 max_steps=C.EPISODE_MAX_STEPS, emulation_speed=0,
-                 instance_id=0):
+                 emulation_speed=0, instance_id=0):
         super().__init__()
         self.rom_path = rom_path
         self.init_state = init_state
-        self.max_steps = max_steps
         self.instance_id = instance_id
 
         self.pyboy = PyBoy(
@@ -46,7 +44,8 @@ class PokemonBlueEnv(gym.Env):
         h, w = C.SCREEN_SHAPE
         self.observation_space = spaces.Dict({
             "screen": spaces.Box(0, 255, (C.FRAME_STACK, h, w), np.uint8),
-            "stats": spaces.Box(0.0, 1.0, (12,), np.float32),
+            "text":   spaces.Box(0, 255, (C.TEXT_ROWS * C.TEXT_COLS,), np.uint8),
+            "stats":  spaces.Box(0.0, 1.0, (12,), np.float32),
         })
 
         self._initial_state_bytes = None
@@ -117,6 +116,7 @@ class PokemonBlueEnv(gym.Env):
     # ------------------------------------------------------------------ #
     def reset_internal_state(self):
         self.step_count = 0
+        self.steps_since_new_tile = 0
         self.visited_tiles = set()
         self.visited_maps = set()
         self.visited_buildings = set()
@@ -173,7 +173,7 @@ class PokemonBlueEnv(gym.Env):
         self.total_reward += reward
 
         terminated = completed
-        truncated = self.step_count >= self.max_steps
+        truncated = self.steps_since_new_tile >= C.NO_PROGRESS_STEPS
 
         info = {
             "badges": self.prev_badges,
@@ -182,6 +182,7 @@ class PokemonBlueEnv(gym.Env):
             "maps_visited": len(self.visited_maps),
             "buildings_visited": len(self.visited_buildings),
             "tiles_visited": len(self.visited_tiles),
+            "dex_seen": self.prev_seen,
             "dex_owned": self.prev_owned,
             "episode_reward": self.total_reward,
             "instance_id": self.instance_id,
@@ -202,6 +203,14 @@ class PokemonBlueEnv(gym.Env):
     # ------------------------------------------------------------------ #
     # Internals
     # ------------------------------------------------------------------ #
+    def _read_text_tiles(self):
+        bg = self.pyboy.tilemap_background
+        return np.array(
+            [[bg[col, row] for col in range(C.TEXT_COLS)]
+             for row in range(C.TEXT_ROW_START, C.TEXT_ROW_START + C.TEXT_ROWS)],
+            dtype=np.uint8,
+        )
+
     def _push_frame(self):
         # Screen is 144x160 RGBA; convert to grayscale and halve resolution
         rgba = self.pyboy.screen.ndarray
@@ -221,7 +230,11 @@ class PokemonBlueEnv(gym.Env):
         stats[5] = min(self.prev_owned / 151.0, 1.0)
         for i, lv in enumerate(levels[:6]):
             stats[6 + i] = min(lv / 100.0, 1.0)
-        return {"screen": self._frames.copy(), "stats": stats}
+        return {
+            "screen": self._frames.copy(),
+            "text":   self._read_text_tiles().flatten(),
+            "stats":  stats,
+        }
 
     def _compute_reward(self):
         reward = 0.0
@@ -231,6 +244,9 @@ class PokemonBlueEnv(gym.Env):
         if pos not in self.visited_tiles:
             self.visited_tiles.add(pos)
             reward += C.REWARD_NEW_TILE
+            self.steps_since_new_tile = 0
+        else:
+            self.steps_since_new_tile += 1
         if map_id not in self.visited_maps:
             self.visited_maps.add(map_id)
             reward += C.REWARD_NEW_MAP

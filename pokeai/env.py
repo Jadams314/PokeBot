@@ -20,6 +20,7 @@ from pyboy import PyBoy
 
 from . import config as C
 from . import memory_map as M
+from .text_map import readable_text
 
 
 class PokemonBlueEnv(gym.Env):
@@ -50,6 +51,11 @@ class PokemonBlueEnv(gym.Env):
 
         self._initial_state_bytes = None
         self._frames = np.zeros((C.FRAME_STACK, h, w), dtype=np.uint8)
+        # These persist across episodes — map rewards only fire the first time
+        # an env ever visits a new map/building, creating a permanent frontier
+        # that advances as the model explores further.
+        self.visited_maps = set()
+        self.visited_buildings = set()
         self.reset_internal_state()
 
     # ------------------------------------------------------------------ #
@@ -118,8 +124,8 @@ class PokemonBlueEnv(gym.Env):
         self.step_count = 0
         self.steps_since_new_tile = 0
         self.visited_tiles = set()
-        self.visited_maps = set()
-        self.visited_buildings = set()
+        self.seen_text = set()
+        self._text_tiles = np.zeros((C.TEXT_ROWS, C.TEXT_COLS), dtype=np.int32)
         self.prev_level_sum = 0
         self.prev_badges = 0
         self.prev_events = 0
@@ -156,6 +162,7 @@ class PokemonBlueEnv(gym.Env):
 
         self._frames[:] = 0
         self._push_frame()
+        self._text_tiles = self._read_text_tiles()
         return self._observation(), {}
 
     def step(self, action):
@@ -168,6 +175,7 @@ class PokemonBlueEnv(gym.Env):
 
         self.step_count += 1
         self._push_frame()
+        self._text_tiles = self._read_text_tiles()
 
         reward, completed = self._compute_reward()
         self.total_reward += reward
@@ -233,7 +241,7 @@ class PokemonBlueEnv(gym.Env):
             stats[6 + i] = min(lv / 100.0, 1.0)
         return {
             "screen": self._frames.copy(),
-            "text":   self._read_text_tiles().astype(np.float32).flatten() / 383.0,
+            "text":   self._text_tiles.astype(np.float32).flatten() / 383.0,
             "stats":  stats,
         }
 
@@ -255,6 +263,12 @@ class PokemonBlueEnv(gym.Env):
                 and self.read(M.MAP_TILESET) in C.BUILDING_TILESETS):
             self.visited_buildings.add(map_id)
             reward += C.REWARD_NEW_BUILDING
+
+        text = readable_text(self._text_tiles)
+        if text and text not in self.seen_text:
+            self.seen_text.add(text)
+            reward += C.REWARD_NEW_TEXT
+            self.steps_since_new_tile = 0
 
         level_sum = sum(self.party_levels())
         if level_sum > self.prev_level_sum and self.prev_level_sum < C.LEVEL_REWARD_CAP:

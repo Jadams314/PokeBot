@@ -33,6 +33,7 @@ NO_PROGRESS_STEPS = 5000      # episode ends if no new tile visited within this 
 REWARD_NEW_TILE = 0.01        # stepping somewhere it has never been this episode
 REWARD_NEW_MAP = 3.0          # entering a brand new map/area
 REWARD_NEW_BUILDING = 5.0     # entering a building for the first time this episode
+REWARD_NEW_TEXT = 1.5         # seeing a new unique text string this episode
 REWARD_LEVEL = 1.0            # per pokemon level gained
 REWARD_BADGE = 20.0           # per gym badge
 REWARD_EVENT = 8.0            # per story event flag set

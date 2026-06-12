@@ -44,7 +44,7 @@ class PokemonBlueEnv(gym.Env):
         h, w = C.SCREEN_SHAPE
         self.observation_space = spaces.Dict({
             "screen": spaces.Box(0, 255, (C.FRAME_STACK, h, w), np.uint8),
-            "text":   spaces.Box(0, 255, (C.TEXT_ROWS * C.TEXT_COLS,), np.uint8),
+            "text":   spaces.Box(0.0, 1.0, (C.TEXT_ROWS * C.TEXT_COLS,), np.float32),
             "stats":  spaces.Box(0.0, 1.0, (12,), np.float32),
         })
 
@@ -205,10 +205,11 @@ class PokemonBlueEnv(gym.Env):
     # ------------------------------------------------------------------ #
     def _read_text_tiles(self):
         bg = self.pyboy.tilemap_background
+        # PyBoy returns tile identifiers 0-383 (three VRAM blocks); int32 holds this safely.
         return np.array(
             [[bg[col, row] for col in range(C.TEXT_COLS)]
              for row in range(C.TEXT_ROW_START, C.TEXT_ROW_START + C.TEXT_ROWS)],
-            dtype=np.uint8,
+            dtype=np.int32,
         )
 
     def _push_frame(self):
@@ -232,7 +233,7 @@ class PokemonBlueEnv(gym.Env):
             stats[6 + i] = min(lv / 100.0, 1.0)
         return {
             "screen": self._frames.copy(),
-            "text":   self._read_text_tiles().flatten(),
+            "text":   self._read_text_tiles().astype(np.float32).flatten() / 383.0,
             "stats":  stats,
         }
 
